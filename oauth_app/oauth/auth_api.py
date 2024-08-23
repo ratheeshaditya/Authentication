@@ -104,16 +104,23 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    token_expiry = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="The token has been expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("exp") < datetime.now(): #Checking if the payload date is expired
-            raise credentials_exception
+        print(payload)
+        if datetime.fromtimestamp(payload.get("exp")) < datetime.now(): #Checking if the payload date is expired
+            raise token_expiry
         user_obj: str = payload.get("user_obj")
         if not user_obj:
             raise credentials_exception
         user = get_user(user_obj["email"],db) 
         
-        if not user or user_obj["password_last_updated"] < user.password_last_updated.isoformat():
+        if not user or datetime.fromisoformat(user_obj["password_last_updated"]) < user.password_last_updated:
             #Checking if the password has been changed.
             raise credentials_exception
         return user
