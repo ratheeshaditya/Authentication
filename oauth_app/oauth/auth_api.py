@@ -90,3 +90,31 @@ def authenticate(user:UserLogin,db):
         #Returning same exception for both
         raise HTTPException(status_code=404, detail="User not found or invalid username or password")
     return user_obj #Returns a user object
+
+
+def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Validates the current user based on the provided token. If the token is valid, and if the time of the last updated password in the token
+    is the same as the one present in the database, no changes is made, otherwise 
+    it returns the user object, otherwise, it raises a 401 Unauthorized error.
+    """
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_obj: str = payload.get("user_obj")
+        if not user_obj:
+            raise credentials_exception
+        user = get_user(user_obj["email"],db) 
+        
+        if not user or user_obj["password_last_updated"] < user.password_last_updated.isoformat():
+            #Checking if the password has been changed.
+            raise credentials_exception
+        return user
+    except InvalidTokenError:
+        raise credentials_exception
+
