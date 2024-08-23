@@ -119,8 +119,7 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload)
-        print(datetime.fromtimestamp(payload.get("exp")))
+        
         if datetime.fromtimestamp(payload.get("exp")) < datetime.now(): #Checking if the payload date is expired
             raise token_expiry
         user_obj: str = payload.get("user_obj")
