@@ -20,3 +20,5 @@ The .env file contains :-
 - ACCESS_TOKEN_EXPIRE_MINUTES
 - DB_PATH
 
+  ** I couldn't complete the proof of concept application
+
