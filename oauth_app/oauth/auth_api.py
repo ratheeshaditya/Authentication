@@ -118,3 +118,23 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
     except InvalidTokenError:
         raise credentials_exception
 
+
+@router.post("/update_user",response_model=UserCreateSuccess)
+def update_user(user_input: UserUpdate, current_user: dict = Depends(validate_current_user),db: Session = Depends(get_db)):
+    
+    """
+    Function to update the user
+    """
+    getUser = get_user(current_user.email,db)
+    if getUser:
+        getUser.name = user_input.name
+        getUser.last_name = user_input.last_name
+        getUser.email = getUser.email #Leave it as default for now
+        getUser.password_hash = get_password_hash(user_input.password)
+        getUser.phone_number = user_input.phone_number
+        getUser.country = user_input.country
+        getUser.password_last_updated = datetime.now()
+        db.add(getUser)
+        db.commit()
+
+    return getUser
