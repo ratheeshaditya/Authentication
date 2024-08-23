@@ -138,3 +138,29 @@ def update_user(user_input: UserUpdate, current_user: dict = Depends(validate_cu
         db.commit()
 
     return getUser
+
+
+
+
+@router.post("/authenticate",response_model=AuthenticationToken)
+def authenticate_user(user: UserLogin, db: Session = Depends(get_db)):
+    from oauth.utils import create_access_token
+    """
+    Function to authenticate a user
+    """
+    user_obj = authenticate(user,db)  #This calls a series of functions to authenticate the user
+    get_token = create_access_token({"user_obj":{
+                "name" : user_obj.name,
+                "email" : user_obj.email,
+                "last_name": user_obj.last_name,
+                "phone_number" : user_obj.phone_number,
+                "country" : user_obj.country,
+                "password_last_updated": user_obj.password_last_updated.isoformat() 
+            }
+        }
+    )
+    
+    token = AuthenticationToken(token_session=get_token)
+    return token
+    
+    
