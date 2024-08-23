@@ -54,7 +54,7 @@ def get_user(email, db):
         #If there is a user found with the email
         return user_obj
     else:
-        return False
+        return None
     
 
 @router.post("/create",response_model=UserCreateSuccess)
@@ -106,6 +106,8 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("exp") < datetime.now(): #Checking if the payload date is expired
+            raise credentials_exception
         user_obj: str = payload.get("user_obj")
         if not user_obj:
             raise credentials_exception
@@ -120,6 +122,9 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
 
 @router.post("/validate_api",response_model=UserCreateSuccess)
 def validate_current_user_api(token:str = Depends(oauth2_scheme),db: Session = Depends(get_db)):
+    """
+    Function to validate the token.
+    """
     validate_current_user(token,db)
 
 
