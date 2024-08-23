@@ -79,3 +79,14 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already exists")
 
 
+def authenticate(user:UserLogin,db):
+    """
+    Performs the entire authentication process for the given user ranging from
+    -> Fetching the user
+    -> Verifying the password
+    """
+    user_obj = get_user(user.email,db)
+    if not verify_password(user.password, user_obj.password_hash): #Return 
+        #Returning same exception for both
+        raise HTTPException(status_code=404, detail="User not found or invalid username or password")
+    return user_obj #Returns a user object
