@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime 
 from response_types import AuthenticationToken, UserCreateSuccess, UserCreate, UserLogin, UserUpdate
 from db import get_db
-from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from dotenv import load_dotenv
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -86,9 +85,11 @@ def authenticate(user:UserLogin,db):
     -> Verifying the password
     """
     user_obj = get_user(user.email,db)
-    if not verify_password(user.password, user_obj.password_hash): #Return 
+    
+    if not user_obj or not verify_password(user.password, user_obj.password_hash): #Return 
         #Returning same exception for both
         raise HTTPException(status_code=404, detail="User not found or invalid username or password")
+
     return user_obj #Returns a user object
 
 
@@ -110,9 +111,16 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
         detail="The token has been expired",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    session_expiry = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="The session may have expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         print(payload)
+        print(datetime.fromtimestamp(payload.get("exp")))
         if datetime.fromtimestamp(payload.get("exp")) < datetime.now(): #Checking if the payload date is expired
             raise token_expiry
         user_obj: str = payload.get("user_obj")
@@ -122,7 +130,7 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
         
         if not user or datetime.fromisoformat(user_obj["password_last_updated"]) < user.password_last_updated:
             #Checking if the password has been changed.
-            raise credentials_exception
+            raise session_expiry
         return user
     except InvalidTokenError:
         raise credentials_exception
@@ -130,7 +138,7 @@ def validate_current_user(token:str = Depends(oauth2_scheme), db: Session = Depe
 @router.post("/validate_api",response_model=UserCreateSuccess)
 def validate_current_user_api(token:str = Depends(oauth2_scheme),db: Session = Depends(get_db)):
     """
-    Function to validate the token.
+    API call to validate the token.
     """
     validate_current_user(token,db)
 

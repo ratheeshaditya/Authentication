@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, Column, DateTime, Date, String,ForeignKey,
 from .base import Base
 from enum import Enum
 from datetime import datetime 
+
 class UserAccount(Base):
 
     """
@@ -22,21 +23,3 @@ class UserAccount(Base):
     def __repr__(self):
         return f"<UserAccount(id={self.id}, name={self.name}, email={self.email})>"
     
-
-
-# class InvalidSession(Base):
-
-
-
-# class Session(Base):
-
-#     """
-#         This schema defines the User database.
-#     """
-
-
-#     __tablename__ = "session"
-#     id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True)
-
-#     def __repr__(self):
-#         return f"<UserAccount(id={self.id}, name={self.name}, email={self.email})>"
